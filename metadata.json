@@ -1,6 +1,6 @@
 {
   "name": "Emergency Event Tracking - Form",
-  "description": "A data collection tool for tracking emergency events like displacement and returns, with AI-powered narrative analysis based on the DTM Data Kit.",
+  "description": "A data collection tool for tracking emergency events like displacement and returns, based on the DTM Data Kit.",
   "requestFramePermissions": [],
   "prompt": ""
 }

@@ -27,6 +27,13 @@ const DownloadIcon = () => (
     </svg>
 );
 
+const SpinnerIcon = () => (
+    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+);
+
 interface ValidationErrors {
   [key: string]: string;
 }
@@ -185,6 +192,9 @@ const App: React.FC = () => {
     if (!formData.eventType) newErrors.eventType = 'Event type is required.';
     if (!formData.trigger) newErrors.trigger = 'Trigger is required.';
     if (!formData.narrativeSummary.trim()) newErrors.narrativeSummary = 'Narrative summary is required.';
+    if (!formData.priorityNeed1) newErrors.priorityNeed1 = 'Priority Need 1 is required.';
+    if (!formData.priorityNeed2) newErrors.priorityNeed2 = 'Priority Need 2 is required.';
+    if (!formData.priorityNeed3) newErrors.priorityNeed3 = 'Priority Need 3 is required.';
 
     formData.movements.forEach((m, i) => {
         if (!m.from) newErrors[`movements.${i}.from`] = 'Origin location is required.';
@@ -218,12 +228,15 @@ const App: React.FC = () => {
           setFormData(INITIAL_EVENT_DATA);
           setErrors({});
         } else {
-          const errorData = await response.json().catch(() => ({ detail: 'An unknown error occurred.' }));
-          setSubmissionMessage(`Error: ${errorData.detail || response.statusText}`);
+          // Handle HTTP errors. Try to parse response as text first.
+          const errorBody = await response.text();
+          console.error('Server error response:', errorBody);
+          setSubmissionMessage(`Submission failed: ${response.status} - ${response.statusText}. Please check the console for details.`);
         }
       } catch (error) {
+        // Handle network errors (e.g., CORS, server down)
         console.error("Submission Error:", error);
-        setSubmissionMessage('Error: Could not reach the server. Please check your network connection.');
+        setSubmissionMessage('Error: Request failed. This might be a network issue or a CORS policy problem on the server. Check the browser console.');
       } finally {
         setIsSubmitting(false);
       }
@@ -277,13 +290,13 @@ const App: React.FC = () => {
 
           <Section title="Priority Needs">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Input label="Priority Need 1" name="priorityNeed1" value={formData.priorityNeed1} onChange={handleInputChange} placeholder="e.g., Shelter" />
-                <Input label="Priority Need 2" name="priorityNeed2" value={formData.priorityNeed2} onChange={handleInputChange} placeholder="e.g., Clean Water" />
-                <Input label="Priority Need 3" name="priorityNeed3" value={formData.priorityNeed3} onChange={handleInputChange} placeholder="e.g., Food" />
+              <Input label="Priority Need 1" name="priorityNeed1" value={formData.priorityNeed1} onChange={handleInputChange} placeholder="e.g., Shelter" required error={errors.priorityNeed1} />
+              <Input label="Priority Need 2" name="priorityNeed2" value={formData.priorityNeed2} onChange={handleInputChange} placeholder="e.g., Food" required error={errors.priorityNeed2} />
+              <Input label="Priority Need 3" name="priorityNeed3" value={formData.priorityNeed3} onChange={handleInputChange} placeholder="e.g., Water" required error={errors.priorityNeed3} />
             </div>
           </Section>
-
-          <Section title="Narrative Summary">
+          
+          <Section title="Narrative">
             <Input
               label="Narrative Summary"
               name="narrativeSummary"
@@ -291,36 +304,34 @@ const App: React.FC = () => {
               rows={6}
               value={formData.narrativeSummary}
               onChange={handleInputChange}
-              placeholder="Provide a detailed summary of the event..."
               required
+              labelHint="Describe the event in detail."
               error={errors.narrativeSummary}
             />
           </Section>
-          
-          <div className="flex flex-col items-end gap-4 pt-4">
-            <div className="flex flex-wrap items-center justify-end gap-4">
-              <button type="button" onClick={handleExportJSON} className="inline-flex items-center rounded-md bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-200 transition-colors">
-                  <DownloadIcon />
-                  Export as JSON
-              </button>
-               <button type="button" onClick={handleExportCSV} className="inline-flex items-center rounded-md bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-200 transition-colors">
-                  <DownloadIcon />
-                  Export as CSV
-              </button>
-              <button
+
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-4 border-t border-slate-200">
+             <div className="flex gap-2">
+                <button type="button" onClick={handleExportJSON} className="flex items-center justify-center rounded-md bg-slate-500 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 transition-colors">
+                    <DownloadIcon /> JSON
+                </button>
+                <button type="button" onClick={handleExportCSV} className="flex items-center justify-center rounded-md bg-slate-500 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 transition-colors">
+                   <DownloadIcon /> CSV
+                </button>
+             </div>
+             <button
                 type="submit"
-                className="rounded-md bg-green-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-transform hover:scale-105 disabled:bg-slate-400 disabled:cursor-not-allowed disabled:scale-100"
                 disabled={isSubmitting}
+                className="w-full sm:w-auto flex items-center justify-center rounded-md bg-[#0A3A9A] px-6 py-2 text-base font-medium text-white hover:bg-[#082f7a] focus:outline-none focus:ring-2 focus:ring-[#0A3A9A] focus:ring-offset-2 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Event'}
+               {isSubmitting ? <SpinnerIcon /> : 'Submit Event'}
               </button>
-            </div>
-            {submissionMessage && (
-              <p className={`w-full text-right font-medium ${submissionMessage.startsWith('Error:') ? 'text-red-600' : 'text-green-600'}`}>
-                {submissionMessage}
-              </p>
-            )}
           </div>
+          {submissionMessage && (
+            <div className={`mt-4 text-center p-3 rounded-md ${Object.keys(errors).length > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                {submissionMessage}
+            </div>
+          )}
         </form>
       </main>
     </div>
