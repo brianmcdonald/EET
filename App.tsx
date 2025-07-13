@@ -205,7 +205,7 @@ const App: React.FC = () => {
     if (validateForm()) {
       setIsSubmitting(true);
       try {
-        const response = await fetch('http://ec2-13-43-54-162.eu-west-2.compute.amazonaws.com:8000/submit-event', {
+        const response = await fetch('http://13.134.130.43:8000/submit-event', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
