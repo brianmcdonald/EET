@@ -1,0 +1,14 @@
+[workspace]
+authors = ["Brian Mc Donald <brian@brianmcdonald.me>"]
+channels = ["conda-forge"]
+name = "EET"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = ">=3.13.5,<3.14"
+
+[pypi-dependencies]
+fastapi = { version = ">=0.116.1, <0.117", extras = ["standard"] }
