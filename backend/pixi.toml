@@ -9,6 +9,7 @@ version = "0.1.0"
 
 [dependencies]
 python = ">=3.13.5,<3.14"
+uvicorn = ">=0.38.0,<0.39"
 
 [pypi-dependencies]
 fastapi = { version = ">=0.116.1, <0.117", extras = ["standard"] }

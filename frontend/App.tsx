@@ -1,5 +1,20 @@
 
 import React, { useState, useCallback, useRef } from 'react';
+import {
+  Container,
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Button,
+  Alert,
+  CircularProgress,
+  Divider,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import DownloadIcon from '@mui/icons-material/Download';
+import SendIcon from '@mui/icons-material/Send';
 import type { EventData, Movement, Coordinates } from './types';
 import { EVENT_TYPE_OPTIONS, TRIGGER_OPTIONS, INITIAL_EVENT_DATA, COUNTRY_OPTIONS } from './constants';
 import Header from './components/Header';
@@ -7,32 +22,6 @@ import Input from './components/Input';
 import Select from './components/Select';
 import MovementCard from './components/MovementPairCard';
 import MapModal from './components/MapModal';
-
-const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div className="bg-white p-6 rounded-lg shadow-md">
-    <h2 className="text-xl font-bold text-[#0A3A9A] border-b border-slate-200 pb-3 mb-6">{title}</h2>
-    <div className="space-y-4">{children}</div>
-  </div>
-);
-
-const AddIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-    </svg>
-);
-
-const DownloadIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-    </svg>
-);
-
-const SpinnerIcon = () => (
-    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-);
 
 interface ValidationErrors {
   [key: string]: string;
@@ -57,7 +46,7 @@ const App: React.FC = () => {
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     clearError(name);
-    
+
     if (e.target instanceof HTMLInputElement && e.target.type === 'date') {
         if (value) {
             const date = new Date(value);
@@ -81,7 +70,7 @@ const App: React.FC = () => {
         return { ...prev, movements: updatedMovements };
     });
   }, []);
-  
+
   const addMovement = useCallback(() => {
     setFormData(prev => ({
       ...prev,
@@ -133,7 +122,7 @@ const App: React.FC = () => {
 
   const handleExportCSV = () => {
     const { movements, ...eventDetails } = formData;
-    
+
     const escapeCsvCell = (cell: any): string => {
         const cellStr = String(cell ?? '');
         if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
@@ -141,9 +130,9 @@ const App: React.FC = () => {
         }
         return cellStr;
     };
-    
+
     const headers = [
-        'country', 'email', 'eventStart', 'eventEnd', 'eventType', 'trigger', 
+        'country', 'email', 'eventStart', 'eventEnd', 'eventType', 'trigger',
         'priorityNeed1', 'priorityNeed2', 'priorityNeed3', 'narrativeSummary',
         'movement_id', 'movement_from_lat', 'movement_from_lon', 'movement_to_lat', 'movement_to_lon', 'movement_individuals'
     ];
@@ -160,7 +149,7 @@ const App: React.FC = () => {
         const rowData = { ...eventDetails, ...flatMovement };
         return headers.map(header => escapeCsvCell(rowData[header as keyof typeof rowData])).join(',');
     });
-    
+
     const csvContent = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     triggerDownload(blob, `emergency_event_report_${formData.country || 'data'}.csv`);
@@ -169,7 +158,7 @@ const App: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
     const today = new Date();
-    today.setHours(23, 59, 59, 999); // End of today
+    today.setHours(23, 59, 59, 999);
 
     if (!formData.country) newErrors.country = 'Country is required.';
     if (!formData.email) {
@@ -215,7 +204,8 @@ const App: React.FC = () => {
     if (validateForm()) {
       setIsSubmitting(true);
       try {
-        const response = await fetch('http://13.134.130.43:8000/submit-event', {
+        const apiUrl = process.env.API_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiUrl}/submit-event`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -228,13 +218,11 @@ const App: React.FC = () => {
           setFormData(INITIAL_EVENT_DATA);
           setErrors({});
         } else {
-          // Handle HTTP errors. Try to parse response as text first.
           const errorBody = await response.text();
           console.error('Server error response:', errorBody);
           setSubmissionMessage(`Submission failed: ${response.status} - ${response.statusText}. Please check the console for details.`);
         }
       } catch (error) {
-        // Handle network errors (e.g., CORS, server down)
         console.error("Submission Error:", error);
         setSubmissionMessage('Error: Request failed. This might be a network issue or a CORS policy problem on the server. Check the browser console.');
       } finally {
@@ -247,94 +235,166 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-12">
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', pb: 6 }}>
       <Header />
       <MapModal isOpen={isMapOpen} onClose={handleMapClose} onCoordinateSelect={handleCoordinateSelect} country={formData.country} />
-      <main className="max-w-5xl mx-auto mt-8 px-4">
-        <form onSubmit={handleSubmit} className="space-y-8" noValidate>
-          <Section title="Event Details">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Select label="Country" name="country" value={formData.country} onChange={handleInputChange} options={COUNTRY_OPTIONS} required error={errors.country}/>
-              <Input label="Your Email" name="email" type="email" value={formData.email} onChange={handleInputChange} required placeholder="reporter@example.org" error={errors.email}/>
-              <Input label="Event Start Date" name="eventStart" type="date" value={formData.eventStart} onChange={handleInputChange} required error={errors.eventStart}/>
-              <Input label="Event End Date" name="eventEnd" type="date" value={formData.eventEnd} onChange={handleInputChange} required error={errors.eventEnd}/>
-              <Select label="Event Type" name="eventType" value={formData.eventType} onChange={handleInputChange} options={EVENT_TYPE_OPTIONS} required error={errors.eventType}/>
-              <Select label="Trigger" name="trigger" value={formData.trigger} onChange={handleInputChange} options={TRIGGER_OPTIONS} required error={errors.trigger}/>
-            </div>
-          </Section>
 
-          <Section title="Movements">
-            <div className="space-y-4">
-              {formData.movements.map((movement, index) => (
-                <MovementCard
-                  key={movement.id}
-                  movement={movement}
-                  index={index}
-                  onChange={handleMovementChange}
-                  onRemove={removeMovement}
-                  isLast={formData.movements.length === 1}
-                  onRequestMapOpen={handleRequestMapOpen}
-                  errors={{
-                    from: errors[`movements.${index}.from`],
-                    to: errors[`movements.${index}.to`],
-                    individuals: errors[`movements.${index}.individuals`],
-                  }}
-                />
-              ))}
-            </div>
-            <button type="button" onClick={addMovement} className="mt-4 flex items-center gap-2 rounded-md bg-slate-600 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors">
-              <AddIcon />
-              Add Movement
-            </button>
-          </Section>
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          {/* Event Details Section */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h5" component="h2" gutterBottom color="primary" fontWeight={600}>
+                Event Details
+              </Typography>
+              <Divider sx={{ mb: 3 }} />
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <Select label="Country" name="country" value={formData.country} onChange={handleInputChange} options={COUNTRY_OPTIONS} required error={errors.country}/>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Input label="Your Email" name="email" type="email" value={formData.email} onChange={handleInputChange} required placeholder="reporter@example.org" error={errors.email}/>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Input label="Event Start Date" name="eventStart" type="date" value={formData.eventStart} onChange={handleInputChange} required error={errors.eventStart}/>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Input label="Event End Date" name="eventEnd" type="date" value={formData.eventEnd} onChange={handleInputChange} required error={errors.eventEnd}/>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Select label="Event Type" name="eventType" value={formData.eventType} onChange={handleInputChange} options={EVENT_TYPE_OPTIONS} required error={errors.eventType}/>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Select label="Trigger" name="trigger" value={formData.trigger} onChange={handleInputChange} options={TRIGGER_OPTIONS} required error={errors.trigger}/>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
 
-          <Section title="Priority Needs">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Input label="Priority Need 1" name="priorityNeed1" value={formData.priorityNeed1} onChange={handleInputChange} placeholder="e.g., Shelter" required error={errors.priorityNeed1} />
-              <Input label="Priority Need 2" name="priorityNeed2" value={formData.priorityNeed2} onChange={handleInputChange} placeholder="e.g., Food" required error={errors.priorityNeed2} />
-              <Input label="Priority Need 3" name="priorityNeed3" value={formData.priorityNeed3} onChange={handleInputChange} placeholder="e.g., Water" required error={errors.priorityNeed3} />
-            </div>
-          </Section>
-          
-          <Section title="Narrative">
-            <Input
-              label="Narrative Summary"
-              name="narrativeSummary"
-              isTextArea
-              rows={6}
-              value={formData.narrativeSummary}
-              onChange={handleInputChange}
-              required
-              labelHint="Describe the event in detail."
-              error={errors.narrativeSummary}
-            />
-          </Section>
-
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-4 border-t border-slate-200">
-             <div className="flex gap-2">
-                <button type="button" onClick={handleExportJSON} className="flex items-center justify-center rounded-md bg-slate-500 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 transition-colors">
-                    <DownloadIcon /> JSON
-                </button>
-                <button type="button" onClick={handleExportCSV} className="flex items-center justify-center rounded-md bg-slate-500 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 transition-colors">
-                   <DownloadIcon /> CSV
-                </button>
-             </div>
-             <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full sm:w-auto flex items-center justify-center rounded-md bg-[#0A3A9A] px-6 py-2 text-base font-medium text-white hover:bg-[#082f7a] focus:outline-none focus:ring-2 focus:ring-[#0A3A9A] focus:ring-offset-2 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
+          {/* Movements Section */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h5" component="h2" gutterBottom color="primary" fontWeight={600}>
+                Movements
+              </Typography>
+              <Divider sx={{ mb: 3 }} />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {formData.movements.map((movement, index) => (
+                  <MovementCard
+                    key={movement.id}
+                    movement={movement}
+                    index={index}
+                    onChange={handleMovementChange}
+                    onRemove={removeMovement}
+                    isLast={formData.movements.length === 1}
+                    onRequestMapOpen={handleRequestMapOpen}
+                    errors={{
+                      from: errors[`movements.${index}.from`],
+                      to: errors[`movements.${index}.to`],
+                      individuals: errors[`movements.${index}.individuals`],
+                    }}
+                  />
+                ))}
+              </Box>
+              <Button
+                type="button"
+                onClick={addMovement}
+                variant="outlined"
+                startIcon={<AddIcon />}
+                sx={{ mt: 2 }}
               >
-               {isSubmitting ? <SpinnerIcon /> : 'Submit Event'}
-              </button>
-          </div>
+                Add Movement
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Priority Needs Section */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h5" component="h2" gutterBottom color="primary" fontWeight={600}>
+                Priority Needs
+              </Typography>
+              <Divider sx={{ mb: 3 }} />
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={4}>
+                  <Input label="Priority Need 1" name="priorityNeed1" value={formData.priorityNeed1} onChange={handleInputChange} placeholder="e.g., Shelter" required error={errors.priorityNeed1} />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Input label="Priority Need 2" name="priorityNeed2" value={formData.priorityNeed2} onChange={handleInputChange} placeholder="e.g., Food" required error={errors.priorityNeed2} />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Input label="Priority Need 3" name="priorityNeed3" value={formData.priorityNeed3} onChange={handleInputChange} placeholder="e.g., Water" required error={errors.priorityNeed3} />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
+          {/* Narrative Section */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h5" component="h2" gutterBottom color="primary" fontWeight={600}>
+                Narrative
+              </Typography>
+              <Divider sx={{ mb: 3 }} />
+              <Input
+                label="Narrative Summary"
+                name="narrativeSummary"
+                isTextArea
+                rows={6}
+                value={formData.narrativeSummary}
+                onChange={handleInputChange}
+                required
+                labelHint="Describe the event in detail"
+                error={errors.narrativeSummary}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'flex-end', gap: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                type="button"
+                onClick={handleExportJSON}
+                variant="outlined"
+                color="secondary"
+                startIcon={<DownloadIcon />}
+              >
+                JSON
+              </Button>
+              <Button
+                type="button"
+                onClick={handleExportCSV}
+                variant="outlined"
+                color="secondary"
+                startIcon={<DownloadIcon />}
+              >
+                CSV
+              </Button>
+            </Box>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              variant="contained"
+              size="large"
+              endIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
+              sx={{ minWidth: 160 }}
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Event'}
+            </Button>
+          </Box>
+
+          {/* Submission Message */}
           {submissionMessage && (
-            <div className={`mt-4 text-center p-3 rounded-md ${Object.keys(errors).length > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+            <Box sx={{ mt: 3 }}>
+              <Alert severity={Object.keys(errors).length > 0 ? 'error' : 'success'}>
                 {submissionMessage}
-            </div>
+              </Alert>
+            </Box>
           )}
-        </form>
-      </main>
-    </div>
+        </Box>
+      </Container>
+    </Box>
   );
 };
 

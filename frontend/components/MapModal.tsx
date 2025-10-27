@@ -1,5 +1,20 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Box,
+  Typography,
+  IconButton,
+  Chip,
+  Alert,
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import CheckIcon from '@mui/icons-material/Check';
+import InfoIcon from '@mui/icons-material/Info';
 import type { Coordinates } from '../types';
 
 declare var L: any;
@@ -36,8 +51,6 @@ const MapModal: React.FC<MapModalProps> = ({ isOpen, onClose, onCoordinateSelect
   };
 
   useEffect(() => {
-    // If the modal is not open, do nothing. The cleanup function from the
-    // previous render will have already handled destroying the map instance.
     if (!isOpen) {
       return;
     }
@@ -62,7 +75,6 @@ const MapModal: React.FC<MapModalProps> = ({ isOpen, onClose, onCoordinateSelect
       }
 
       if (containerRef.current) {
-        // Create a new map instance and store it in the ref
         const map = L.map(containerRef.current).setView(view, zoom);
         mapRef.current = map;
 
@@ -73,23 +85,18 @@ const MapModal: React.FC<MapModalProps> = ({ isOpen, onClose, onCoordinateSelect
 
         map.on('click', handleMapClick);
 
-        // Clear any state from a previous session
         setSelectedCoords(null);
         if (markerRef.current) {
           markerRef.current.remove();
           markerRef.current = null;
         }
 
-        // Invalidate size to ensure it renders correctly after the modal appears
         setTimeout(() => map.invalidateSize(), 100);
       }
     };
 
     setupMap();
 
-    // Cleanup function: will run when isOpen becomes false or when the component unmounts.
-    // This is crucial for preventing Leaflet from trying to control a DOM element
-    // that no longer exists or has been re-rendered.
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
@@ -98,38 +105,79 @@ const MapModal: React.FC<MapModalProps> = ({ isOpen, onClose, onCoordinateSelect
     };
   }, [isOpen, country, handleMapClick]);
 
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" aria-modal="true" role="dialog">
-      <div className="relative w-11/12 h-5/6 bg-white rounded-lg shadow-xl flex flex-col p-4">
-        <div className="flex justify-between items-center pb-3 border-b border-slate-200">
-          <h2 className="text-xl font-bold text-slate-800">Select Location</h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-800" aria-label="Close map">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="py-4">
-            <p className="text-slate-600">Click anywhere on the map to place a marker, then confirm your selection.</p>
-            {selectedCoords && (
-                 <p className="font-mono text-sm text-slate-800 bg-slate-100 p-2 rounded-md mt-2">
-                    Selected: Lat: {selectedCoords.lat}, Lon: {selectedCoords.lon}
-                 </p>
-            )}
-        </div>
-        <div ref={containerRef} className="flex-grow w-full h-full rounded-md border border-slate-300" id="map-container"></div>
-        <div className="pt-4 mt-4 border-t border-slate-200 flex justify-end">
-            <button
-                onClick={handleConfirm}
-                disabled={!selectedCoords}
-                className="rounded-md bg-green-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
-            >
-              Confirm Selection
-            </button>
-        </div>
-      </div>
-    </div>
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      PaperProps={{
+        sx: {
+          height: '90vh',
+          maxHeight: '90vh',
+        }
+      }}
+    >
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 2 }}>
+        <Typography variant="h6" component="div" fontWeight={600}>
+          Select Location
+        </Typography>
+        <IconButton
+          edge="end"
+          color="inherit"
+          onClick={onClose}
+          aria-label="close"
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
+        <Box sx={{ p: 2, bgcolor: 'grey.50' }}>
+          <Alert severity="info" icon={<InfoIcon />}>
+            Click anywhere on the map to place a marker, then confirm your selection.
+          </Alert>
+          {selectedCoords && (
+            <Box sx={{ mt: 2 }}>
+              <Chip
+                label={`Selected: Lat: ${selectedCoords.lat}, Lon: ${selectedCoords.lon}`}
+                color="success"
+                variant="outlined"
+                sx={{ fontFamily: 'monospace' }}
+              />
+            </Box>
+          )}
+        </Box>
+        <Box
+          ref={containerRef}
+          sx={{
+            flexGrow: 1,
+            width: '100%',
+            height: '100%',
+            borderTop: 1,
+            borderColor: 'divider',
+          }}
+          id="map-container"
+        />
+      </DialogContent>
+
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onClose} color="inherit">
+          Cancel
+        </Button>
+        <Button
+          onClick={handleConfirm}
+          disabled={!selectedCoords}
+          variant="contained"
+          color="success"
+          startIcon={<CheckIcon />}
+        >
+          Confirm Selection
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
