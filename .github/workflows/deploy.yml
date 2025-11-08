@@ -40,7 +40,7 @@ jobs:
         env:
           NODE_ENV: production
           # Production API endpoint for eet-add.dtm.report
-          API_URL: http://13.134.130.43:8000
+          API_URL: https://eet-backend.dtm.report
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
