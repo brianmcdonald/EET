@@ -4,7 +4,7 @@ import { defineConfig, loadEnv } from 'vite';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      // Use '/' for custom domain (eet.brianmcdonald.me)
+      // Use '/' for custom domain (eet-add.dtm.report)
       // Use '/EET/' if deploying to brianmcdonald.github.io/EET/
       base: '/',
       define: {

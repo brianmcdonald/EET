@@ -39,6 +39,7 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          # Production API endpoint for eet-add.dtm.report
           API_URL: http://13.134.130.43:8000
 
       - name: Setup Pages
